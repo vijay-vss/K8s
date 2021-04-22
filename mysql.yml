@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mysqlrs
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      name: mysqlpod
+      labels:
+        app: mysql
+    spec:
+      volumes:
+      - name: mysqlvol
+        hostPath:
+          path: /home/ubuntu/mysqlvol
+      containers:
+      - name: mysqlcontainer
+        image: mysql
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mysqlvol
+          mountPath: /var/lib/mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: mysql@123
+        - name: MYSQL_ROOT_HOST
+          value: mysql        
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysqlsvc
+spec:
+  type: ClusterIP
+  ports:
+  - port: 
+    targetPort: 3306
+  selector:
+    app: mysql

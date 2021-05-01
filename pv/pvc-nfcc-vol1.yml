@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-nfc-vol1
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: manual
+  resources:
+    requests:
+     storage: 500Mi

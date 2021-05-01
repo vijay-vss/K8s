@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springdeployment
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: springapp
+  template:
+    metadata:
+      name: springapppod
+      labels:
+        app: springapp
+    spec:    
+      containers:
+      - name: springappcontainer
+        image: vijay3460/spring-mongo:1
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MONGO_DB_HOSTNAME
+          value: mongo
+        - name: MONGO_DB_USERNAME
+          value: devdb
+        - name: MONGO_DB_PASSWORD
+          value: devdb@123
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springsvc
+spec:
+  selector:
+    app: springapp
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongors
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  replicas: 2
+  template:
+    metadata:
+      name: mongopod
+      labels:
+        app: mongo
+    spec:
+      containers:        
+      - name: mongocontainer
+        image: mongo
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: nfs-vol
+          mountPath: /data/db
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: devdb
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: devdb@123
+      volumes:
+      - name: nfs-vol
+        persistentVolumeClaim:
+          claimName: pvc-nfc-vol1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+spec:
+  type: ClusterIP
+  ports:
+  - port: 27017
+    targetPort: 27017
+  selector:
+    app: mongo
+

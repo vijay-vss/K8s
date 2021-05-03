@@ -35,4 +35,22 @@ spec:
   type: NodePort
   ports:
   - port: 80
-    targetPort: 8080  
+    targetPort: 8080
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mavenhpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1       
+    kind: Deployment
+    name: mavenwebappdeployment
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - resource:
+      name: cpu
+      targetAverageUtilization: 50
+    type: Resource
+

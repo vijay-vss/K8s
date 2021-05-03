@@ -26,9 +26,15 @@ spec:
           mountPath: /var/lib/mysql
         env:
         - name: MYSQL_ROOT_PASSWORD
-          value: mysql@123
+          valueFrom:
+            secretKeyRef:
+              name: mysqlsecret      
+              key: password
         - name: MYSQL_ROOT_HOST
-          value: mysql        
+          valueFrom:
+            configMapKeyRef:
+              name: mysqlconfigmap
+              key: host   
 ---
 apiVersion: v1
 kind: Service
@@ -37,7 +43,22 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 
+  - port: 3306
     targetPort: 3306
   selector:
     app: mysql
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysqlconfigmap
+data:
+  host: mysql
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysqlsecret
+type: Opaque
+stringData:
+  password: mysql@123

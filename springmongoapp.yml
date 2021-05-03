@@ -4,100 +4,106 @@ metadata:
   name: springdeployment
 spec:
   replicas: 2
+  selector:
+    matchLabels:
+      app: springapp
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
       maxSurge: 2
-  minReadySeconds: 30
-  selector:
-    matchLabels:
-      app: springapp
+  minReadySeconds: 30    
   template:
     metadata:
       name: springapppod
       labels:
         app: springapp
-    spec:    
+    spec:
       containers:
       - name: springappcontainer
         image: vijay3460/spring-mongo:1
         ports:
         - containerPort: 8080
+        resources:
+          requests:
+            cpu: "100m"
+            memory: 256Mi
+          limits:
+            cpu: "200m"
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            port: 8080
+          initialDelaySeconds: 15
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            port: 8080
+          initialDelaySeconds: 20
+          timeoutSeconds: 1
+          periodSeconds: 60
         env:
+        - name: MONGO_DB_USERNAME
+          value: devdb
+        - name: MONGO_DB_PASSWORD
+          value: devdb@123
         - name: MONGO_DB_HOSTNAME
           value: mongo
-        - name: MONGO_DB_USERNAME
-          valueFrom:
-            configMapKeyRef:
-              name: mongoconfigmap
-              key: username
-        - name: MONGO_DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mongosecret
-              key: password
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: springsvc
+  name: springappsvc
 spec:
   selector:
     app: springapp
-  type: NodePort
   ports:
   - port: 80
     targetPort: 8080
+  type: NodePort
 ---
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
   name: mongors
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: mongo
-  replicas: 2
   template:
     metadata:
       name: mongopod
       labels:
         app: mongo
     spec:
-      containers:        
+      containers:
       - name: mongocontainer
         image: mongo
         ports:
         - containerPort: 27017
         volumeMounts:
-        - name: nfs-vol
+        - name: nfsvol        
           mountPath: /data/db
         env:
         - name: MONGO_INITDB_ROOT_USERNAME
-          valueFrom:
-            configMapKeyRef:
-              name: mongoconfigmap
-              key: username
+          value: devdb
         - name: MONGO_INITDB_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mongosecret
-              key: password
+          value: devdb@123          
       volumes:
-      - name: nfs-vol
-        persistentVolumeClaim:
-          claimName: pvc-nfc-vol1
+      - name: nfsvol
+        nfs:
+          server: 192.168.1.219
+          path: /mnt/share
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: mongo
 spec:
-  type: ClusterIP
+  selector:
+    app: mongo
   ports:
   - port: 27017
     targetPort: 27017
-  selector:
-    app: mongo
-
+  type: ClusterIP    
